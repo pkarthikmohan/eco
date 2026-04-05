@@ -45,37 +45,63 @@ export function AnalysisView({ product, analysis }: AnalysisViewProps) {
             <Leaf className="w-5 h-5 text-eco-a" />
             Impact Breakdown
           </h3>
-          <div className="space-y-4">
-            <ScoreBar label="Carbon Footprint" score={Math.max(20, analysis.ecoScore - 10)} color="bg-eco-a" />
-            <ScoreBar label="Water Usage" score={Math.max(30, analysis.ecoScore - 5)} color="bg-blue-500" />
-            <ScoreBar label="Packaging" score={analysis.packagingScore} color="bg-orange-500" />
-          </div>
-          
-          <div className="pt-4 border-t border-slate-100 space-y-3">
-            <div className="flex items-start gap-3 text-sm">
-              <Droplets className="w-4 h-4 text-blue-500 mt-1 shrink-0" />
-              <p><span className="font-bold">Water:</span> {analysis.waterUsage}</p>
+          <div className="space-y-6">
+            <div>
+              <ScoreBar label="Carbon Footprint" score={Math.max(20, analysis.ecoScore - 10)} color="bg-eco-a" />
+              <p className="text-xs text-slate-500 mt-2 leading-relaxed">
+                <span className="font-bold text-slate-700">{analysis.carbonFootprint}:</span> {analysis.carbonExplanation}
+              </p>
             </div>
-            <div className="flex items-start gap-3 text-sm">
-              <Package className="w-4 h-4 text-orange-500 mt-1 shrink-0" />
-              <p><span className="font-bold">Carbon:</span> {analysis.carbonFootprint}</p>
+            <div>
+              <ScoreBar label="Water Usage" score={Math.max(30, analysis.ecoScore - 5)} color="bg-blue-500" />
+              <p className="text-xs text-slate-500 mt-2 leading-relaxed">
+                <span className="font-bold text-slate-700">{analysis.waterUsage}:</span> {analysis.waterExplanation}
+              </p>
+            </div>
+            <div>
+              <ScoreBar label="Packaging" score={analysis.packagingScore} color="bg-orange-500" />
+              <p className="text-xs text-slate-500 mt-2 leading-relaxed">
+                <span className="font-bold text-slate-700">Score {analysis.packagingScore}/100:</span> {analysis.packagingExplanation}
+              </p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-3xl p-6 shadow-lg border border-slate-100 space-y-4">
-          <h3 className="text-xl font-display font-bold flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-amber-500" />
-            Key Concerns
-          </h3>
-          <ul className="space-y-3">
-            {analysis.concerns.map((concern, i) => (
-              <li key={i} className="flex items-start gap-3 text-slate-600 text-sm">
-                <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 shrink-0" />
-                {concern}
-              </li>
-            ))}
-          </ul>
+        <div className="space-y-6">
+          <div className="bg-white rounded-3xl p-6 shadow-lg border border-slate-100 space-y-4">
+            <h3 className="text-xl font-display font-bold flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-500" />
+              Key Concerns
+            </h3>
+            <ul className="space-y-3">
+              {analysis.concerns.map((concern, i) => (
+                <li key={i} className="flex items-start gap-3 text-slate-600 text-sm">
+                  <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 shrink-0" />
+                  {concern}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {analysis.citations && analysis.citations.length > 0 && (
+            <div className="bg-white rounded-3xl p-6 shadow-lg border border-slate-100 space-y-4">
+              <h3 className="text-lg font-display font-bold text-slate-900">Sources & Citations</h3>
+              <ul className="space-y-2">
+                {analysis.citations.map((cite, i) => (
+                  <li key={i} className="text-xs">
+                    <a 
+                      href={cite.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-eco-a hover:underline flex items-center gap-1"
+                    >
+                      {cite.title} <ArrowRight className="w-2 h-2" />
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       </div>
 
@@ -100,9 +126,16 @@ export function AnalysisView({ product, analysis }: AnalysisViewProps) {
                   {alt.reason}
                 </p>
               </div>
-              <button className="text-eco-a text-xs font-bold flex items-center gap-1 hover:gap-2 transition-all">
-                View Product <ArrowRight className="w-3 h-3" />
-              </button>
+              {alt.url && (
+                <a 
+                  href={alt.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-eco-a text-xs font-bold flex items-center gap-1 hover:gap-2 transition-all"
+                >
+                  View Product <ArrowRight className="w-3 h-3" />
+                </a>
+              )}
             </motion.div>
           ))}
         </div>

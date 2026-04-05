@@ -9,7 +9,10 @@ export async function analyzeProduct(product: Product): Promise<EcoAnalysis> {
   Categories: ${product.categories || 'Unknown'}
   Ingredients: ${product.ingredients_text || 'Not listed'}
   
-  Provide a detailed sustainability analysis in JSON format.`;
+  Provide a detailed sustainability analysis in JSON format.
+  Include real-world citations or links to sources for the data.
+  Provide explanations for the carbon footprint, water usage, and packaging scores.
+  Suggest alternative products with real URLs (e.g., from official sites or major retailers).`;
 
   console.log("Analyzing product:", product.product_name);
   const response = await ai.models.generateContent({
@@ -23,8 +26,11 @@ export async function analyzeProduct(product: Product): Promise<EcoAnalysis> {
           ecoScore: { type: Type.NUMBER, description: "Score from 0-100" },
           grade: { type: Type.STRING, enum: ["A", "B", "C", "D", "F"] },
           carbonFootprint: { type: Type.STRING, description: "Estimated carbon footprint description" },
+          carbonExplanation: { type: Type.STRING, description: "Detailed explanation of why the carbon score is what it is" },
           waterUsage: { type: Type.STRING, description: "Estimated water usage description" },
+          waterExplanation: { type: Type.STRING, description: "Detailed explanation of why the water usage score is what it is" },
           packagingScore: { type: Type.NUMBER, description: "Score from 0-100" },
+          packagingExplanation: { type: Type.STRING, description: "Detailed explanation of why the packaging score is what it is" },
           concerns: { type: Type.ARRAY, items: { type: Type.STRING } },
           alternatives: {
             type: Type.ARRAY,
@@ -33,14 +39,26 @@ export async function analyzeProduct(product: Product): Promise<EcoAnalysis> {
               properties: {
                 name: { type: Type.STRING },
                 reason: { type: Type.STRING },
-                ecoScore: { type: Type.NUMBER }
+                ecoScore: { type: Type.NUMBER },
+                url: { type: Type.STRING, description: "Real URL for the alternative product" }
               },
-              required: ["name", "reason", "ecoScore"]
+              required: ["name", "reason", "ecoScore", "url"]
+            }
+          },
+          citations: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                title: { type: Type.STRING },
+                url: { type: Type.STRING }
+              },
+              required: ["title", "url"]
             }
           },
           verdict: { type: Type.STRING, description: "2 sentence plain English summary" }
         },
-        required: ["ecoScore", "grade", "carbonFootprint", "waterUsage", "packagingScore", "concerns", "alternatives", "verdict"]
+        required: ["ecoScore", "grade", "carbonFootprint", "carbonExplanation", "waterUsage", "waterExplanation", "packagingScore", "packagingExplanation", "concerns", "alternatives", "citations", "verdict"]
       }
     }
   });
@@ -53,8 +71,13 @@ export async function analyzeProduct(product: Product): Promise<EcoAnalysis> {
 
 export async function analyzeImage(base64Image: string, mimeType: string): Promise<EcoAnalysis & { productName: string; brand: string }> {
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
-  const prompt = `Identify the product in this image and analyze its environmental impact. 
-  Provide a detailed sustainability analysis in JSON format.`;
+  const prompt = `Identify the product in this image and analyze its environmental impact.
+  First, determine if the image contains a consumer product (like food, cosmetics, electronics, etc.).
+  If the image is of a human, animal, or anything that is NOT a consumer product, set "isProduct" to false and provide a "rejectionReason".
+  If it is a product, provide a detailed sustainability analysis in JSON format.
+  Include real-world citations or links to sources for the data.
+  Provide explanations for the carbon footprint, water usage, and packaging scores.
+  Suggest alternative products with real URLs.`;
 
   const imagePart = {
     inlineData: {
@@ -72,13 +95,18 @@ export async function analyzeImage(base64Image: string, mimeType: string): Promi
       responseSchema: {
         type: Type.OBJECT,
         properties: {
+          isProduct: { type: Type.BOOLEAN, description: "Whether the image contains a consumer product" },
+          rejectionReason: { type: Type.STRING, description: "Reason for rejection if not a product (e.g., 'Image contains a human, please upload a product')" },
           productName: { type: Type.STRING, description: "Identified product name" },
           brand: { type: Type.STRING, description: "Identified brand" },
           ecoScore: { type: Type.NUMBER, description: "Score from 0-100" },
           grade: { type: Type.STRING, enum: ["A", "B", "C", "D", "F"] },
           carbonFootprint: { type: Type.STRING, description: "Estimated carbon footprint description" },
+          carbonExplanation: { type: Type.STRING, description: "Detailed explanation of carbon score" },
           waterUsage: { type: Type.STRING, description: "Estimated water usage description" },
+          waterExplanation: { type: Type.STRING, description: "Detailed explanation of water score" },
           packagingScore: { type: Type.NUMBER, description: "Score from 0-100" },
+          packagingExplanation: { type: Type.STRING, description: "Detailed explanation of packaging score" },
           concerns: { type: Type.ARRAY, items: { type: Type.STRING } },
           alternatives: {
             type: Type.ARRAY,
@@ -87,14 +115,26 @@ export async function analyzeImage(base64Image: string, mimeType: string): Promi
               properties: {
                 name: { type: Type.STRING },
                 reason: { type: Type.STRING },
-                ecoScore: { type: Type.NUMBER }
+                ecoScore: { type: Type.NUMBER },
+                url: { type: Type.STRING }
               },
-              required: ["name", "reason", "ecoScore"]
+              required: ["name", "reason", "ecoScore", "url"]
+            }
+          },
+          citations: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                title: { type: Type.STRING },
+                url: { type: Type.STRING }
+              },
+              required: ["title", "url"]
             }
           },
           verdict: { type: Type.STRING, description: "2 sentence plain English summary" }
         },
-        required: ["productName", "brand", "ecoScore", "grade", "carbonFootprint", "waterUsage", "packagingScore", "concerns", "alternatives", "verdict"]
+        required: ["isProduct", "productName", "brand", "ecoScore", "grade", "carbonFootprint", "carbonExplanation", "waterUsage", "waterExplanation", "packagingScore", "packagingExplanation", "concerns", "alternatives", "citations", "verdict"]
       }
     }
   });
@@ -103,7 +143,8 @@ export async function analyzeImage(base64Image: string, mimeType: string): Promi
   console.log("Image analysis raw response received:", text);
   if (!text) throw new Error("No response from AI");
   try {
-    return JSON.parse(text) as EcoAnalysis & { productName: string; brand: string };
+    const result = JSON.parse(text);
+    return result as EcoAnalysis & { productName: string; brand: string };
   } catch (parseErr) {
     console.error("Failed to parse AI response as JSON:", text);
     throw new Error("Invalid response format from AI");

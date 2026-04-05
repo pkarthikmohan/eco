@@ -71,6 +71,13 @@ export default function App() {
       console.log("Calling analyzeImage...");
       const result = await analyzeImage(base64Image, mimeType);
       console.log("analyzeImage result received:", result);
+      
+      if (result.isProduct === false) {
+        setError(result.rejectionReason || "Please upload an image of a consumer product (not humans or animals).");
+        setIsLoading(false);
+        return;
+      }
+
       setAnalysis(result);
       setSelectedProduct({
         product_name: result.productName,
