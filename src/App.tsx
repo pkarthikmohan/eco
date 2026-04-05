@@ -37,7 +37,9 @@ export default function App() {
         setError("No products found. Try a different search term.");
       }
     } catch (err) {
-      setError("Failed to fetch products. Please try again.");
+      console.error("handleSearch error details:", err);
+      const message = err instanceof Error ? err.message : String(err);
+      setError(`Search failed: ${message}`);
     } finally {
       setIsSearching(false);
     }

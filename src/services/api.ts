@@ -152,8 +152,21 @@ export async function analyzeImage(base64Image: string, mimeType: string): Promi
 }
 
 export async function searchProducts(query: string): Promise<Product[]> {
-  const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
-  if (!response.ok) throw new Error("Failed to search products");
-  const data = await response.json();
-  return data.products || [];
+  console.log("Searching for products with query:", query);
+  try {
+    const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+    console.log("Search response status:", response.status);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error("Search failed with status:", response.status, errorData);
+      const details = errorData.error || errorData.details || "Unknown error";
+      throw new Error(`Failed to search products: ${response.status} - ${details}`);
+    }
+    const data = await response.json();
+    console.log("Search results received:", data.products?.length || 0);
+    return data.products || [];
+  } catch (err) {
+    console.error("searchProducts error:", err);
+    throw err;
+  }
 }
