@@ -1,9 +1,8 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { EcoAnalysis, Product } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
-
 export async function analyzeProduct(product: Product): Promise<EcoAnalysis> {
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
   const prompt = `Analyze the environmental impact of this product based on its details:
   Name: ${product.product_name}
   Brand: ${product.brands || 'Unknown'}
@@ -12,8 +11,9 @@ export async function analyzeProduct(product: Product): Promise<EcoAnalysis> {
   
   Provide a detailed sustainability analysis in JSON format.`;
 
+  console.log("Analyzing product:", product.product_name);
   const response = await ai.models.generateContent({
-    model: "gemini-3.1-pro-preview",
+    model: "gemini-3-flash-preview",
     contents: prompt,
     config: {
       responseMimeType: "application/json",
@@ -46,23 +46,26 @@ export async function analyzeProduct(product: Product): Promise<EcoAnalysis> {
   });
 
   const text = response.text;
+  console.log("AI Response received");
   if (!text) throw new Error("No response from AI");
   return JSON.parse(text) as EcoAnalysis;
 }
 
-export async function analyzeImage(base64Image: string, mimeType: string): Promise<EcoAnalysis> {
+export async function analyzeImage(base64Image: string, mimeType: string): Promise<EcoAnalysis & { productName: string; brand: string }> {
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
   const prompt = `Identify the product in this image and analyze its environmental impact. 
   Provide a detailed sustainability analysis in JSON format.`;
 
   const imagePart = {
     inlineData: {
       data: base64Image.split(',')[1] || base64Image,
-      mimeType: mimeType,
+      mimeType: mimeType || 'image/jpeg',
     },
   };
 
+  console.log("Analyzing image... MIME type:", mimeType);
   const response = await ai.models.generateContent({
-    model: "gemini-3.1-pro-preview",
+    model: "gemini-3-flash-preview",
     contents: { parts: [imagePart, { text: prompt }] },
     config: {
       responseMimeType: "application/json",
@@ -97,8 +100,14 @@ export async function analyzeImage(base64Image: string, mimeType: string): Promi
   });
 
   const text = response.text;
+  console.log("Image analysis raw response received:", text);
   if (!text) throw new Error("No response from AI");
-  return JSON.parse(text) as EcoAnalysis & { productName: string; brand: string };
+  try {
+    return JSON.parse(text) as EcoAnalysis & { productName: string; brand: string };
+  } catch (parseErr) {
+    console.error("Failed to parse AI response as JSON:", text);
+    throw new Error("Invalid response format from AI");
+  }
 }
 
 export async function searchProducts(query: string): Promise<Product[]> {

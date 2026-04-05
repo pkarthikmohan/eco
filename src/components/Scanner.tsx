@@ -88,10 +88,14 @@ export function Scanner({ onScan, isLoading }: ScannerProps) {
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    console.log("File selected for upload:", file?.name, file?.type);
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
+        console.log("File read complete, calling onScan...");
         onScan(reader.result as string, file.type);
+        // Reset input so the same file can be selected again
+        if (fileInputRef.current) fileInputRef.current.value = "";
       };
       reader.readAsDataURL(file);
     }

@@ -61,12 +61,16 @@ export default function App() {
   };
 
   const handleScan = async (base64Image: string, mimeType: string) => {
+    console.log("handleScan called with image data. MIME:", mimeType);
     setIsLoading(true);
     setError(null);
     setSelectedProduct(null);
     setAnalysis(null);
+    setSearchResults([]); // Clear search results when scanning
     try {
-      const result = await analyzeImage(base64Image, mimeType) as EcoAnalysis & { productName: string; brand: string };
+      console.log("Calling analyzeImage...");
+      const result = await analyzeImage(base64Image, mimeType);
+      console.log("analyzeImage result received:", result);
       setAnalysis(result);
       setSelectedProduct({
         product_name: result.productName,
@@ -75,6 +79,7 @@ export default function App() {
       } as Product);
       updateStats(result.grade);
     } catch (err) {
+      console.error("handleScan error:", err);
       setError("Failed to identify product from image. Try searching manually.");
     } finally {
       setIsLoading(false);
