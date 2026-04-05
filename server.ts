@@ -37,85 +37,18 @@ async function startServer() {
       console.log("Open Food Facts response status:", response.status);
       
       if (response.ok) {
-        const data = await response.json();
+        const data = (await response.json()) as any;
         console.log("Search results count:", data.products?.length || 0);
         return res.json(data);
       }
       
-      throw new Error(`Open Food Facts returned ${response.status}`);
+      res.status(response.status).json({ error: `Open Food Facts returned ${response.status}` });
     } catch (error) {
-      console.error("Search proxy error, attempting AI fallback:", error);
-      
-      // Fallback to Gemini if API is down
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) {
-        console.error("GEMINI_API_KEY is missing in server environment");
-        return res.status(500).json({ 
-          error: "Search failed and no AI fallback available", 
-          details: "API key missing" 
-        });
-      }
-
-      try {
-        const ai = new GoogleGenAI({ apiKey });
-        const prompt = `The user is searching for "${query}". The product database is currently unavailable. 
-        Please provide a list of 3-5 real-world products that match this search query.
-        Return the results in JSON format matching the Open Food Facts structure:
-        {
-          "products": [
-            {
-              "product_name": "Product Name",
-              "brands": "Brand Name",
-              "code": "unique_code_123",
-              "categories": "Category1, Category2",
-              "ingredients_text": "Ingredient 1, Ingredient 2..."
-            }
-          ]
-        }`;
-
-        const aiResponse = await ai.models.generateContent({
-          model: "gemini-3-flash-preview",
-          contents: prompt,
-          config: {
-            responseMimeType: "application/json",
-            responseSchema: {
-              type: Type.OBJECT,
-              properties: {
-                products: {
-                  type: Type.ARRAY,
-                  items: {
-                    type: Type.OBJECT,
-                    properties: {
-                      product_name: { type: Type.STRING },
-                      brands: { type: Type.STRING },
-                      code: { type: Type.STRING },
-                      categories: { type: Type.STRING },
-                      ingredients_text: { type: Type.STRING }
-                    },
-                    required: ["product_name", "brands", "code"]
-                  }
-                }
-              },
-              required: ["products"]
-            }
-          }
-        });
-
-        const text = aiResponse.text;
-        if (text) {
-          console.log("AI Fallback search results generated successfully");
-          const parsedData = JSON.parse(text);
-          return res.json(parsedData);
-        }
-        throw new Error("AI returned empty response");
-      } catch (aiError) {
-        console.error("AI Fallback also failed:", aiError);
-        return res.status(500).json({ 
-          error: "Failed to fetch products", 
-          details: error instanceof Error ? error.message : String(error),
-          aiError: aiError instanceof Error ? aiError.message : String(aiError)
-        });
-      }
+      console.error("Search proxy error:", error);
+      res.status(500).json({ 
+        error: "Failed to fetch from Open Food Facts", 
+        details: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 

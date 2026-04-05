@@ -166,7 +166,64 @@ export async function searchProducts(query: string): Promise<Product[]> {
     console.log("Search results received:", data.products?.length || 0);
     return data.products || [];
   } catch (err) {
-    console.error("searchProducts error:", err);
+    console.warn("Search API failed, attempting AI fallback:", err);
+    
+    // AI Fallback (Frontend)
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+      const prompt = `The user is searching for "${query}". The product database is currently unavailable. 
+      Please provide a list of 3-5 real-world products that match this search query.
+      Return the results in JSON format matching the Open Food Facts structure:
+      {
+        "products": [
+          {
+            "product_name": "Product Name",
+            "brands": "Brand Name",
+            "code": "unique_code_123",
+            "categories": "Category1, Category2",
+            "ingredients_text": "Ingredient 1, Ingredient 2..."
+          }
+        ]
+      }`;
+
+      const aiResponse = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              products: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    product_name: { type: Type.STRING },
+                    brands: { type: Type.STRING },
+                    code: { type: Type.STRING },
+                    categories: { type: Type.STRING },
+                    ingredients_text: { type: Type.STRING }
+                  },
+                  required: ["product_name", "brands", "code"]
+                }
+              }
+            },
+            required: ["products"]
+          }
+        }
+      });
+
+      const text = aiResponse.text;
+      if (text) {
+        console.log("AI Fallback search results generated successfully (Frontend)");
+        const parsedData = JSON.parse(text);
+        return parsedData.products || [];
+      }
+    } catch (aiErr) {
+      console.error("AI Fallback also failed:", aiErr);
+    }
+    
     throw err;
   }
 }
