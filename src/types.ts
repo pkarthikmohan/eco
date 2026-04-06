@@ -1,13 +1,16 @@
 export interface EcoAnalysis {
   ecoScore: number;
   grade: 'A' | 'B' | 'C' | 'D' | 'F';
+  carbonScore: number;
   carbonFootprint: string;
   carbonExplanation: string;
+  waterScore: number;
   waterUsage: string;
   waterExplanation: string;
   packagingScore: number;
   packagingExplanation: string;
   concerns: string[];
+  funFact?: string;
   alternatives: {
     name: string;
     reason: string;
@@ -21,6 +24,13 @@ export interface EcoAnalysis {
   verdict: string;
   isProduct?: boolean;
   rejectionReason?: string;
+}
+
+export interface HistoryItem {
+  id: string;
+  product: Product;
+  analysis: EcoAnalysis;
+  timestamp: number;
 }
 
 export interface Product {

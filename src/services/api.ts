@@ -11,7 +11,8 @@ export async function analyzeProduct(product: Product): Promise<EcoAnalysis> {
   
   Provide a detailed sustainability analysis in JSON format.
   Include real-world citations or links to sources for the data.
-  Provide explanations for the carbon footprint, water usage, and packaging scores.
+  Provide numerical scores (0-100) and explanations for the carbon footprint, water usage, and packaging.
+  Include a "funFact" - a surprising or interesting sustainability fact about this type of product.
   Suggest alternative products with real URLs (e.g., from official sites or major retailers).`;
 
   console.log("Analyzing product:", product.product_name);
@@ -23,15 +24,18 @@ export async function analyzeProduct(product: Product): Promise<EcoAnalysis> {
       responseSchema: {
         type: Type.OBJECT,
         properties: {
-          ecoScore: { type: Type.NUMBER, description: "Score from 0-100" },
+          ecoScore: { type: Type.NUMBER, description: "Overall score from 0-100" },
           grade: { type: Type.STRING, enum: ["A", "B", "C", "D", "F"] },
+          carbonScore: { type: Type.NUMBER, description: "Carbon score from 0-100" },
           carbonFootprint: { type: Type.STRING, description: "Estimated carbon footprint description" },
           carbonExplanation: { type: Type.STRING, description: "Detailed explanation of why the carbon score is what it is" },
+          waterScore: { type: Type.NUMBER, description: "Water score from 0-100" },
           waterUsage: { type: Type.STRING, description: "Estimated water usage description" },
           waterExplanation: { type: Type.STRING, description: "Detailed explanation of why the water usage score is what it is" },
-          packagingScore: { type: Type.NUMBER, description: "Score from 0-100" },
+          packagingScore: { type: Type.NUMBER, description: "Packaging score from 0-100" },
           packagingExplanation: { type: Type.STRING, description: "Detailed explanation of why the packaging score is what it is" },
           concerns: { type: Type.ARRAY, items: { type: Type.STRING } },
+          funFact: { type: Type.STRING, description: "A surprising sustainability fact" },
           alternatives: {
             type: Type.ARRAY,
             items: {
@@ -58,7 +62,7 @@ export async function analyzeProduct(product: Product): Promise<EcoAnalysis> {
           },
           verdict: { type: Type.STRING, description: "2 sentence plain English summary" }
         },
-        required: ["ecoScore", "grade", "carbonFootprint", "carbonExplanation", "waterUsage", "waterExplanation", "packagingScore", "packagingExplanation", "concerns", "alternatives", "citations", "verdict"]
+        required: ["ecoScore", "grade", "carbonScore", "carbonFootprint", "carbonExplanation", "waterScore", "waterUsage", "waterExplanation", "packagingScore", "packagingExplanation", "concerns", "funFact", "alternatives", "citations", "verdict"]
       }
     }
   });
@@ -76,7 +80,8 @@ export async function analyzeImage(base64Image: string, mimeType: string): Promi
   If the image is of a human, animal, or anything that is NOT a consumer product, set "isProduct" to false and provide a "rejectionReason".
   If it is a product, provide a detailed sustainability analysis in JSON format.
   Include real-world citations or links to sources for the data.
-  Provide explanations for the carbon footprint, water usage, and packaging scores.
+  Provide numerical scores (0-100) and explanations for the carbon footprint, water usage, and packaging.
+  Include a "funFact" - a surprising or interesting sustainability fact about this type of product.
   Suggest alternative products with real URLs.`;
 
   const imagePart = {
@@ -96,18 +101,21 @@ export async function analyzeImage(base64Image: string, mimeType: string): Promi
         type: Type.OBJECT,
         properties: {
           isProduct: { type: Type.BOOLEAN, description: "Whether the image contains a consumer product" },
-          rejectionReason: { type: Type.STRING, description: "Reason for rejection if not a product (e.g., 'Image contains a human, please upload a product')" },
+          rejectionReason: { type: Type.STRING, description: "Reason for rejection if not a product" },
           productName: { type: Type.STRING, description: "Identified product name" },
           brand: { type: Type.STRING, description: "Identified brand" },
-          ecoScore: { type: Type.NUMBER, description: "Score from 0-100" },
+          ecoScore: { type: Type.NUMBER, description: "Overall score from 0-100" },
           grade: { type: Type.STRING, enum: ["A", "B", "C", "D", "F"] },
+          carbonScore: { type: Type.NUMBER, description: "Carbon score from 0-100" },
           carbonFootprint: { type: Type.STRING, description: "Estimated carbon footprint description" },
           carbonExplanation: { type: Type.STRING, description: "Detailed explanation of carbon score" },
+          waterScore: { type: Type.NUMBER, description: "Water score from 0-100" },
           waterUsage: { type: Type.STRING, description: "Estimated water usage description" },
           waterExplanation: { type: Type.STRING, description: "Detailed explanation of water score" },
-          packagingScore: { type: Type.NUMBER, description: "Score from 0-100" },
+          packagingScore: { type: Type.NUMBER, description: "Packaging score from 0-100" },
           packagingExplanation: { type: Type.STRING, description: "Detailed explanation of packaging score" },
           concerns: { type: Type.ARRAY, items: { type: Type.STRING } },
+          funFact: { type: Type.STRING, description: "A surprising sustainability fact" },
           alternatives: {
             type: Type.ARRAY,
             items: {
@@ -134,7 +142,7 @@ export async function analyzeImage(base64Image: string, mimeType: string): Promi
           },
           verdict: { type: Type.STRING, description: "2 sentence plain English summary" }
         },
-        required: ["isProduct", "productName", "brand", "ecoScore", "grade", "carbonFootprint", "carbonExplanation", "waterUsage", "waterExplanation", "packagingScore", "packagingExplanation", "concerns", "alternatives", "citations", "verdict"]
+        required: ["isProduct", "productName", "brand", "ecoScore", "grade", "carbonScore", "carbonFootprint", "carbonExplanation", "waterScore", "waterUsage", "waterExplanation", "packagingScore", "packagingExplanation", "concerns", "funFact", "alternatives", "citations", "verdict"]
       }
     }
   });
